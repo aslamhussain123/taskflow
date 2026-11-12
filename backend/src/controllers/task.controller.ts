@@ -17,6 +17,11 @@ export const getAllTasks = asyncHandler(async (req: Request, res: Response) => {
   return sendSuccess(res, tasks, 'Tasks fetched successfully', 200);
 });
 
+export const getAssignees = asyncHandler(async (_req: Request, res: Response) => {
+  const users = await taskService.getAssignees();
+  return sendSuccess(res, users, 'Assignees fetched successfully', 200);
+});
+
 // READ ONE
 export const getTaskById = asyncHandler(async (req: Request, res: Response) => {
   const userId = (req as any).user.id;

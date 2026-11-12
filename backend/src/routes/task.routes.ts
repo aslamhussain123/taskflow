@@ -14,6 +14,7 @@ router.get('/stats', taskController.getTaskStats);
 
 // Get all tasks
 router.get('/get-all', taskController.getAllTasks);
+router.get('/assignees', taskController.getAssignees);
 
 // Get single task
 router.get('/single/:id', taskController.getTaskById);

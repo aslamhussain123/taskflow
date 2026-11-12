@@ -1,9 +1,15 @@
 import prisma from '../config/database';
 
 export const createTask = async (userId: string, data: any) => {
+    if (data.assigneeId) {
+        const assignee = await prisma.user.findUnique({ where: { id: data.assigneeId }, select: { id: true } });
+        if (!assignee) throw new Error('Assignee not found');
+    }
     return await prisma.task.create({
         data: {
             ...data,
+            status: data.status ?? 'BACKLOG',
+            labels: JSON.stringify(data.labels ?? []),
             userId, // Attach the task to the logged-in user
         },
     });
@@ -13,30 +19,46 @@ export const getAllTasks = async (userId: string, query: any) => {
     const { status, priority } = query;
     return await prisma.task.findMany({
         where: {
-            userId,
+            OR: [{ userId }, { assigneeId: userId }],
             status: status || undefined,
             priority: priority || undefined,
         },
+        include: { assignee: { select: { id: true, name: true } } },
         orderBy: { createdAt: 'desc' },
     });
 };
 
+export const getAssignees = async () => prisma.user.findMany({
+    select: { id: true, name: true },
+    orderBy: { name: 'asc' },
+});
+
 export const getTaskById = async (userId: string, id: string) => {
     return await prisma.task.findFirst({
-        where: { id, userId }, // Ensure the task belongs to this user
+        where: { id, OR: [{ userId }, { assigneeId: userId }] },
+        include: { assignee: { select: { id: true, name: true } } },
     });
 };
 
 export const updateTask = async (userId: string, id: string, data: any) => {
-    // Verify ownership first
-    const existing = await prisma.task.findFirst({ where: { id, userId } });
+    const existing = await prisma.task.findFirst({ where: { id, OR: [{ userId }, { assigneeId: userId }] } });
     if (!existing) throw new Error('Task not found or unauthorized');
+
+    if (data.assigneeId) {
+        const assignee = await prisma.user.findUnique({ where: { id: data.assigneeId }, select: { id: true } });
+        if (!assignee) throw new Error('Assignee not found');
+    }
 
     return await prisma.task.update({
         where: { id },
         data: {
             ...data,
-            dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
+            labels: data.labels === undefined ? undefined : JSON.stringify(data.labels),
+            dueDate: data.dueDate === undefined
+                ? undefined
+                : data.dueDate === null
+                    ? null
+                    : new Date(data.dueDate),
         },
     });
 };
@@ -56,7 +78,7 @@ export const getTaskStats = async (userId: string) => {
     const overdue = await prisma.task.count({
         where: {
             userId,
-            status: { not: 'DONE' },
+            status: { notIn: ['DONE', 'CANCELED'] },
             dueDate: { lt: new Date() },
         },
     });

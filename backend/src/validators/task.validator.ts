@@ -6,16 +6,26 @@ export const createTaskSchema = z.object({
     description: z.string().optional(),
 
     status: z.enum([
+        'BACKLOG',
         'TODO',
         'IN_PROGRESS',
-        'COMPLETED',
+        'DONE',
+        'CANCELED',
     ]).optional(),
 
     priority: z.enum([
+        'NONE',
+        'URGENT',
         'LOW',
         'MEDIUM',
         'HIGH',
     ]).optional(),
+
+    assigneeId: z.string().uuid().optional().nullable(),
+
+    project: z.string().trim().max(100).optional().nullable(),
+
+    labels: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
 
     dueDate: z.coerce.date().optional().nullable(),
 });

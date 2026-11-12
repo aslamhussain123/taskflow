@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -13,20 +14,52 @@ model User {
   email     String   @unique
   password  String
   tasks     Task[]
+  assignedTasks Task[] @relation("TaskAssignee")
+  settings  UserSettings?
+  supportTickets SupportTicket[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model UserSettings {
+  id String @id @default(uuid())
+  userId String @unique
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailTaskDue Boolean @default(true)
+  weeklyReport Boolean @default(false)
+  theme String @default("system")
+  updatedAt DateTime @updatedAt
+}
+
+model SupportTicket {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject String
+  message String
+  status String @default("OPEN")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, createdAt])
 }
 
 model Task {
   id          String   @id @default(uuid())
   title       String
   description String?
-  status      String   @default("TODO")
+  status      String   @default("BACKLOG")
   priority    String   @default("MEDIUM")
   dueDate     DateTime?
+  project     String?
+  labels      String   @default("[]")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assigneeId  String?
+  assignee    User?    @relation("TaskAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  @@index([assigneeId])
 }

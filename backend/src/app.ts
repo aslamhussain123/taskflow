@@ -4,6 +4,7 @@ import express from 'express';
 import cors from 'cors';
 
 import taskRoutes from './routes/task.routes';
+import accountRoutes from './routes/account.routes';
 import errorMiddleware from './middlewares/error.middlewares';
 
 const app = express();
@@ -55,6 +56,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/tasks', taskRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/account', accountRoutes);
 
 app.use((req, res) => {
   res.status(404).json({ success: false, message: 'Route not found' });
